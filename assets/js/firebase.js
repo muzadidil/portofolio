@@ -119,6 +119,24 @@ export function errorMessage(error) {
         return 'Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.';
     }
 
+    // Bukan salah yang mengetik: pemasangannya yang belum selesai, dan
+    // pesannya harus menyebut apa yang kurang, bukan kode galat Firebase.
+    if (code === 'auth/operation-not-allowed') {
+        return 'Login Email/Password belum diaktifkan di Firebase Console → Authentication → Sign-in method.';
+    }
+
+    if (code === 'auth/configuration-not-found') {
+        return 'Authentication belum dinyalakan di Firebase Console untuk proyek ini.';
+    }
+
+    if (code === 'auth/user-disabled') {
+        return 'Akun admin ini dinonaktifkan di Firebase Console.';
+    }
+
+    if (code === 'auth/unauthorized-domain') {
+        return 'Alamat situs ini belum terdaftar di Authentication → Settings → Authorized domains.';
+    }
+
     if (code === 'permission-denied') {
         return 'Ditolak: hanya admin yang boleh mengubah data.';
     }
