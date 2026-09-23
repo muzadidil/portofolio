@@ -26,7 +26,7 @@ export const SITE = {
  *
  * Menggantinya berarti mengubah baris ini lalu push ulang.
  */
-export const ADMIN_PASSWORD = 'ganti-password-ini';
+export const ADMIN_PASSWORD = 'zasha';
 
 /*
  * Dari Firebase Console → Project settings → Your apps → Web app.
