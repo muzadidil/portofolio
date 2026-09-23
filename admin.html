@@ -34,6 +34,13 @@
                 <span class="sr-only">Cari proyek</span>
                 <input type="search" id="search" placeholder="Cari proyek…" autocomplete="off">
             </label>
+            <button type="button" class="button" id="backup" title="Simpan salinan semua proyek sebagai berkas JSON">Cadangkan</button>
+
+            <label class="button" title="Masukkan lagi proyek dari berkas cadangan">
+                Pulihkan
+                <input type="file" id="restore" accept="application/json,.json" class="sr-only">
+            </label>
+
             <button type="button" class="button" id="openGithub">Ambil dari GitHub</button>
             <button type="button" class="button button--primary" id="add">+ Tambah proyek</button>
         </div>

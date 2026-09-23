@@ -3,29 +3,41 @@ rules_version = '2';
 /*
  * Aturan keamanan Firestore — Portofolio Fuad.
  *
- * Inilah yang benar-benar menjaga data. Situsnya statis: seluruh kodenya,
- * termasuk projectId, terbaca siapa pun. Tanpa berkas ini, siapa pun yang
- * tahu projectId bisa mengubah atau menghapus portofolio lewat konsol
- * peramban, tanpa pernah melewati kolom password.
+ * PENTING, baca sekali supaya tahu persis keadaannya:
  *
- *   Pengunjung  boleh membaca daftar proyek
- *   Admin       boleh menambah, mengubah, dan menghapus
+ * Situs ini memakai password yang ditulis di dalam kode
+ * (assets/js/config.js), bukan Firebase Authentication. Artinya tidak ada
+ * akun yang bisa diperiksa di sini, dan aturan di bawah terpaksa
+ * mengizinkan SIAPA PUN menulis ke koleksi projects — bukan hanya yang
+ * tahu passwordnya. Kotak password di halaman hanya menutup tampilan
+ * admin, bukan datanya.
  *
- * Admin dikenali dari UID akunnya, bukan email: UID tidak bisa dipakai
- * orang lain walau akunnya suatu saat dihapus dan emailnya didaftarkan
- * ulang.
+ * Yang masih dijaga berkas ini:
+ *   - hanya koleksi `projects` yang bisa disentuh, tidak ada yang lain;
+ *   - bentuk datanya harus benar, jadi isian ngawur tidak bisa masuk;
+ *   - ukurannya dibatasi, jadi tidak bisa dipakai menumpang menyimpan
+ *     berkas besar.
+ *
+ * Karena itu, simpan cadangan dari tombol "Cadangkan" di halaman admin
+ * sesekali. Kalau isinya dihapus orang, itulah jalan pulihnya.
+ *
+ * Kalau suatu saat mau benar-benar dikunci: nyalakan Firebase
+ * Authentication → Email/Password, buat satu akun admin, lalu ganti
+ * `allow write` di bawah menjadi
+ *
+ *     allow create, update: if request.auth != null
+ *       && request.auth.uid == 'UID_AKUN_ADMIN'
+ *       && isProject(request.resource.data);
+ *     allow delete: if request.auth != null
+ *       && request.auth.uid == 'UID_AKUN_ADMIN';
+ *
+ * Langkahnya ada di README.
  *
  * Pasang: Firebase Console → Firestore Database → Rules → tempel → Publish.
  */
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Firebase Console → Authentication → Users → salin "User UID" akun admin.
-    function isAdmin() {
-      return request.auth != null
-        && request.auth.uid == 'GANTI_DENGAN_UID_ADMIN';
-    }
 
     // Bentuk yang sama dengan normalizeProject() di assets/js/portfolio.js.
     function isProject(d) {
@@ -41,8 +53,8 @@ service cloud.firestore {
 
     match /projects/{id} {
       allow read: if true;
-      allow create, update: if isAdmin() && isProject(request.resource.data);
-      allow delete: if isAdmin();
+      allow create, update: if isProject(request.resource.data);
+      allow delete: if true;
     }
 
     // Selain itu ditolak, supaya koleksi baru tidak diam-diam terbuka.

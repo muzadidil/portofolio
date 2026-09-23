@@ -7,7 +7,8 @@
  */
 
 import { SITE } from './config.js';
-import { addProjects, deleteProject, errorMessage, isConfigured, onAdminChange, saveProject, signOut, watchProjects } from './firebase.js';
+import { addProjects, allProjects, deleteProject, errorMessage, isConfigured, saveProject, watchProjects } from './firebase.js';
+import { isUnlocked, lock } from './gate.js';
 import { categoryCounts, filterProjects, fromGithubRepo, knownRepos, normalizeProject, repoKey, sortProjects, validateProject } from './portfolio.js';
 import { categoryTags, h, setupNotice, statusBadge, toast } from './ui.js';
 
@@ -218,12 +219,68 @@ async function addSelectedRepos() {
     }
 }
 
+/* --------------------------------------------------------------- cadangan */
+
+/*
+ * Siapa pun bisa menulis ke Firestore selama passwordnya cuma di kode
+ * (lihat gate.js), jadi satu-satunya pemulihan kalau isinya dihapus orang
+ * adalah salinan yang Anda simpan sendiri. Berkasnya bisa dimasukkan lagi
+ * lewat tombol Pulihkan.
+ */
+async function downloadBackup() {
+    try {
+        const projects = await allProjects();
+        const blob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = h('a', { href: url, download: `portofolio-${new Date().toISOString().slice(0, 10)}.json` });
+
+        document.body.append(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        toast(`${projects.length} proyek disalin ke berkas.`);
+    } catch (error) {
+        toast(errorMessage(error), 'error');
+    }
+}
+
+async function restoreBackup(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file) {
+        return;
+    }
+
+    try {
+        const rows = JSON.parse(await file.text());
+
+        if (!Array.isArray(rows)) {
+            throw new Error('Isi berkasnya bukan daftar proyek.');
+        }
+
+        // Yang namanya sudah ada dilewati, jadi memulihkan dua kali tidak
+        // menggandakan isinya.
+        const existing = new Set(state.projects.map((p) => p.name.toLowerCase()));
+        const missing = rows.filter((row) => row?.name && !existing.has(String(row.name).toLowerCase()));
+
+        if (!missing.length) {
+            toast('Semua proyek di berkas itu sudah ada.');
+
+            return;
+        }
+
+        await addProjects(missing);
+        toast(`${missing.length} proyek dipulihkan.`);
+    } catch (error) {
+        toast(errorMessage(error), 'error');
+    }
+}
+
 /* ----------------------------------------------------------------- mulai */
 
-let started = false;
-
 function startAdmin() {
-    started = true;
     $('toolbar').hidden = false;
 
     $('search').addEventListener('input', (event) => {
@@ -238,6 +295,9 @@ function startAdmin() {
     $('openGithub').addEventListener('click', openGithub);
     $('githubAdd').addEventListener('click', addSelectedRepos);
     $('githubCancel').addEventListener('click', () => $('github').close());
+
+    $('backup').addEventListener('click', downloadBackup);
+    $('restore').addEventListener('change', restoreBackup);
 
     watchProjects((projects) => {
         state.projects = projects;
@@ -254,21 +314,18 @@ function startAdmin() {
 $('brand').textContent = SITE.title;
 document.title = `Admin · ${SITE.title}`;
 
-if (!isConfigured) {
+$('logout').addEventListener('click', () => {
+    lock();
+    location.replace('./');
+});
+
+// Yang belum membuka kunci dikembalikan ke halaman depan. Ini penjaga
+// tampilan, bukan penjaga data; lihat gate.js.
+if (!isUnlocked()) {
+    location.replace('./');
+} else if (!isConfigured) {
     $('status').textContent = '';
     setupNotice($('list'));
 } else {
-    $('logout').addEventListener('click', async () => {
-        await signOut();
-        location.replace('./');
-    });
-
-    // Yang bukan admin dikembalikan ke halaman depan.
-    onAdminChange((isAdmin) => {
-        if (!isAdmin) {
-            location.replace('./');
-        } else if (!started) {
-            startAdmin();
-        }
-    });
+    startAdmin();
 }

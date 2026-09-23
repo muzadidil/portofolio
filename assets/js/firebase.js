@@ -8,29 +8,23 @@
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import {
-    getAuth,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    signOut as firebaseSignOut,
-} from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js';
-import {
     addDoc,
     collection,
     deleteDoc,
     doc,
+    getDocs,
     getFirestore,
     onSnapshot,
     serverTimestamp,
     updateDoc,
     writeBatch,
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js';
-import { ADMIN_EMAIL, firebaseConfig } from './config.js';
+import { firebaseConfig } from './config.js';
 import { normalizeProject } from './portfolio.js';
 
 export const isConfigured = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
 const app = isConfigured ? initializeApp(firebaseConfig) : null;
-const auth = app ? getAuth(app) : null;
 const db = app ? getFirestore(app) : null;
 
 const projects = () => collection(db, 'projects');
@@ -80,69 +74,27 @@ export function deleteProject(id) {
     return deleteDoc(doc(db, 'projects', id));
 }
 
-/* ------------------------------------------------------------- login */
+/** Seluruh proyek sekali ambil, untuk tombol cadangan di halaman admin. */
+export async function allProjects() {
+    const snapshot = await getDocs(projects());
 
-/** Hanya password yang diketik; emailnya dari config.js. */
-export function signIn(password) {
-    return signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);
+    return snapshot.docs.map((d) => ({ id: d.id, ...normalizeProject(d.data()) }));
 }
 
-export function signOut() {
-    return firebaseSignOut(auth);
-}
-
-/**
- * Dipanggil setiap status login berubah, dan sekali saat halaman dibuka.
- * Yang diterima: true kalau yang login adalah admin.
- */
-export function onAdminChange(callback) {
-    if (!auth) {
-        callback(false);
-
-        return () => {};
-    }
-
-    return onAuthStateChanged(auth, (user) => {
-        callback(Boolean(user && user.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase()));
-    });
-}
-
-/** Pesan galat Firebase dalam bahasa manusia. */
+/** Pesan galat Firestore dalam bahasa manusia. */
 export function errorMessage(error) {
     const code = error?.code ?? '';
 
-    if (['auth/invalid-credential', 'auth/wrong-password', 'auth/invalid-login-credentials', 'auth/user-not-found'].includes(code)) {
-        return 'Password salah.';
-    }
-
-    if (code === 'auth/too-many-requests') {
-        return 'Terlalu banyak percobaan. Tunggu sebentar, lalu coba lagi.';
-    }
-
-    // Bukan salah yang mengetik: pemasangannya yang belum selesai, dan
-    // pesannya harus menyebut apa yang kurang, bukan kode galat Firebase.
-    if (code === 'auth/operation-not-allowed') {
-        return 'Login Email/Password belum diaktifkan di Firebase Console → Authentication → Sign-in method.';
-    }
-
-    if (code === 'auth/configuration-not-found') {
-        return 'Authentication belum dinyalakan di Firebase Console untuk proyek ini.';
-    }
-
-    if (code === 'auth/user-disabled') {
-        return 'Akun admin ini dinonaktifkan di Firebase Console.';
-    }
-
-    if (code === 'auth/unauthorized-domain') {
-        return 'Alamat situs ini belum terdaftar di Authentication → Settings → Authorized domains.';
-    }
-
     if (code === 'permission-denied') {
-        return 'Ditolak: hanya admin yang boleh mengubah data.';
+        return 'Ditolak oleh aturan keamanan Firestore. Pastikan isi firestore.rules sudah dipasang lewat Firebase Console.';
     }
 
-    if (code === 'auth/network-request-failed' || code === 'unavailable') {
-        return 'Tidak ada koneksi internet.';
+    if (code === 'unavailable' || code === 'auth/network-request-failed') {
+        return 'Tidak ada koneksi ke Firestore.';
+    }
+
+    if (code === 'not-found') {
+        return 'Database Firestore belum dibuat di Firebase Console.';
     }
 
     return error?.message ?? String(error);

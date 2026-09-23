@@ -17,11 +17,12 @@ Situs statis untuk **GitHub Pages**, dengan data di **Firestore**.
 index.html              halaman umum: daftar, kategori, pencarian, login
 admin.html              halaman admin: CRUD + ambil dari GitHub
 tests.html              tes aturan daftar (buka di peramban)
-firestore.rules         aturan keamanan — penjaga data yang sebenarnya
+firestore.rules         aturan Firestore: bentuk data & koleksi yang boleh
 assets/css/style.css
-assets/js/config.js     judul, akun GitHub, email admin, firebaseConfig
+assets/js/config.js     judul, akun GitHub, password admin, firebaseConfig
 assets/js/portfolio.js  aturan: kategori, pencarian, urutan, impor GitHub
-assets/js/firebase.js   sambungan Firestore & login
+assets/js/firebase.js   sambungan Firestore
+assets/js/gate.js       kunci halaman admin (password di kode)
 assets/js/ui.js         bagian tampilan bersama
 assets/js/public.js     halaman umum
 assets/js/admin.js      halaman admin
@@ -29,40 +30,37 @@ assets/js/admin.js      halaman admin
 
 ## Memasang Firebase (sekali saja)
 
-1. Buka <https://console.firebase.google.com>, **Add project**, beri nama
-   mis. `portofolio-fuad`. Google Analytics tidak perlu. Proyek yang dipakai
-   situs ini: `portofolio-1fa39`.
+1. Proyek Firebase yang dipakai situs ini: `portofolio-1fa39`. Kalau membuat
+   yang baru: <https://console.firebase.google.com> → **Add project**.
 2. **Build → Firestore Database → Create database**, pilih **production
    mode**, lokasi `asia-southeast2 (Jakarta)`.
-3. **Build → Authentication → Get started → Email/Password → Enable**.
-4. **Authentication → Users → Add user**:
-   - Email: `admin@portofolio-fuad.local` (harus sama persis dengan
-     `ADMIN_EMAIL` di `assets/js/config.js`; tidak perlu email sungguhan)
-   - Password: password admin pilihan Anda. Inilah yang diketik di kolom
-     password di pojok kanan.
-5. Salin **User UID** akun itu, lalu ganti `GANTI_DENGAN_UID_ADMIN` di
-   `firestore.rules` dengan UID tersebut.
-6. **Firestore Database → Rules**: tempel seluruh isi `firestore.rules`,
+3. **Firestore Database → Rules**: tempel seluruh isi `firestore.rules`,
    lalu **Publish**.
-7. **Project settings (⚙) → Your apps → Web (`</>`)**, daftarkan aplikasi,
+4. **Project settings (⚙) → Your apps → Web (`</>`)**, daftarkan aplikasi,
    salin isi `firebaseConfig` ke `assets/js/config.js`.
-8. **Authentication → Settings → Authorized domains → Add domain**:
-   `muzadidil.github.io` (dan domain sendiri kalau ada).
-9. Disarankan: **Authentication → Settings → User actions**, matikan
-   **Enable create (sign-up)**, supaya tidak ada yang bisa membuat akun baru.
+5. Ganti `ADMIN_PASSWORD` di `assets/js/config.js`, lalu push.
 
-Lupa password? **Authentication → Users**, hapus akun admin, buat lagi
-dengan email yang sama, lalu perbarui UID di `firestore.rules` (langkah 5–6).
+Firebase Authentication tidak dipakai, jadi tidak ada akun yang perlu dibuat.
 
-### Kenapa bukan password di dalam kode
+## Password admin dan batasnya
 
-Di situs statis, semua kode terbaca siapa pun lewat *View Source*. Password
-yang ditulis di kode (seperti `const PASSWORD = "…"`) langsung ketahuan, dan
-Firestore yang terbuka bisa diubah siapa pun yang tahu `projectId`-nya.
+Password halaman admin ada di `assets/js/config.js`, dan **terbaca siapa pun**
+yang membuka *View Source* di situs yang sudah terbit. Ia menutup tampilan
+halaman admin, bukan datanya: `firestore.rules` terpaksa mengizinkan siapa
+saja menulis ke koleksi `projects`, karena tidak ada akun yang bisa diperiksa
+di server.
 
-Di sini password disimpan di Firebase Authentication dan diperiksa di server
-Google, dan `firestore.rules` hanya mengizinkan akun admin menulis. Tampilan
-login tetap sama: cukup password dan tombol Login.
+Yang masih dijaga aturan Firestore: hanya koleksi `projects` yang bisa
+disentuh, bentuk datanya harus benar, dan ukurannya dibatasi.
+
+Karena itu: **tekan "Cadangkan" di halaman admin sesekali**, dan simpan
+berkas JSON-nya. Kalau isinya dihapus orang, tombol "Pulihkan" memasukkannya
+kembali.
+
+Kalau suatu saat mau benar-benar dikunci, caranya ada di komentar paling atas
+`firestore.rules`: nyalakan Firebase Authentication → Email/Password, buat
+satu akun admin, lalu ganti `allow write` agar memeriksa UID akun itu.
+Tampilan login tetap sama — cukup password.
 
 ## Menjalankan di komputer
 
@@ -71,9 +69,6 @@ diklik dua kali:
 
 - XAMPP (Apache menyala): <http://localhost/portofolio%20fuad/>
 - atau: `php -S localhost:8000` di folder ini, lalu buka <http://localhost:8000>
-
-Tambahkan `localhost` di **Authorized domains** (biasanya sudah ada) supaya
-login bisa dicoba di komputer.
 
 ## Menerbitkan ke GitHub Pages
 

@@ -17,14 +17,16 @@ export const SITE = {
 };
 
 /*
- * Email akun admin di Firebase Authentication.
+ * Password halaman admin.
  *
- * Di halaman hanya password yang diketik; email ini yang dipasangkan
- * dengannya. Tidak perlu email sungguhan — tidak pernah ada surel yang
- * dikirim ke sana. Buat akunnya di Firebase Console → Authentication →
- * Users → Add user, dengan email ini persis dan password pilihan Anda.
+ * PERHATIAN: password ini terbaca siapa pun yang membuka View Source di
+ * situs yang sudah terbit. Ia hanya menutup pintu halaman admin dari
+ * orang yang tidak sengaja masuk; ia TIDAK menjaga datanya. Jangan
+ * memakai password yang juga Anda pakai di tempat lain.
+ *
+ * Menggantinya berarti mengubah baris ini lalu push ulang.
  */
-export const ADMIN_EMAIL = 'admin@portofolio-fuad.local';
+export const ADMIN_PASSWORD = 'ganti-password-ini';
 
 /*
  * Dari Firebase Console → Project settings → Your apps → Web app.

@@ -5,7 +5,8 @@
  */
 
 import { SITE } from './config.js';
-import { errorMessage, isConfigured, onAdminChange, signIn, signOut, watchProjects } from './firebase.js';
+import { errorMessage, isConfigured, watchProjects } from './firebase.js';
+import { isUnlocked, lock, unlock } from './gate.js';
 import { categoryCounts, filterProjects, sortProjects } from './portfolio.js';
 import { categoryTags, h, projectDetail, setupNotice, statusBadge, toneOf } from './ui.js';
 
@@ -147,31 +148,31 @@ function setupSidebar() {
 
 /* --------------------------------------------------------------- login */
 
+function showAdminLinks(open) {
+    $('login').hidden = open;
+    $('adminLinks').hidden = !open;
+}
+
 function setupLogin() {
-    $('login').addEventListener('submit', async (event) => {
+    $('login').addEventListener('submit', (event) => {
         event.preventDefault();
 
-        const button = event.submitter;
-        button.disabled = true;
-        $('loginError').textContent = '';
-
-        try {
-            await signIn($('password').value);
+        if (unlock($('password').value)) {
             location.href = 'admin.html';
-        } catch (error) {
-            $('loginError').textContent = errorMessage(error);
-            $('password').select();
-        } finally {
-            button.disabled = false;
+
+            return;
         }
+
+        $('loginError').textContent = 'Password salah.';
+        $('password').select();
     });
 
-    $('logout').addEventListener('click', () => signOut());
-
-    onAdminChange((isAdmin) => {
-        $('login').hidden = isAdmin;
-        $('adminLinks').hidden = !isAdmin;
+    $('logout').addEventListener('click', () => {
+        lock();
+        showAdminLinks(false);
     });
+
+    showAdminLinks(isUnlocked());
 }
 
 /* ---------------------------------------------------------------- mulai */
@@ -198,6 +199,7 @@ function start() {
 
     window.addEventListener('hashchange', render);
     setupSidebar();
+    setupLogin();
 
     if (!isConfigured) {
         setupNotice($('list'));
@@ -205,8 +207,6 @@ function start() {
 
         return;
     }
-
-    setupLogin();
 
     watchProjects((projects) => {
         state.projects = projects;

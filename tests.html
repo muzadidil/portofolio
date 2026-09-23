@@ -22,6 +22,8 @@
             categoryCounts, filterProjects, fromGithubRepo, knownRepos, normalizeCategory,
             normalizeProject, parseCategories, repoKey, safeUrl, sortProjects, validateProject,
         } from './assets/js/portfolio.js';
+        import { ADMIN_PASSWORD } from './assets/js/config.js';
+        import { isUnlocked, lock, unlock } from './assets/js/gate.js';
 
         const results = [];
 
@@ -124,6 +126,17 @@
             same(p.demo, 'https://muzadidil.github.io/TODO_muzadidil/');
             same(p.year, 2025);
             same(p.description, 'TaskFlow');
+        });
+
+        test('kunci admin: hanya password yang benar yang membuka', () => {
+            lock();
+            same(isUnlocked(), false, 'awalnya terkunci');
+            same(unlock('salah'), false, 'password salah ditolak');
+            same(isUnlocked(), false, 'tetap terkunci');
+            same(unlock(ADMIN_PASSWORD), true, 'password benar diterima');
+            same(isUnlocked(), true, 'terbuka');
+            lock();
+            same(isUnlocked(), false, 'terkunci lagi setelah keluar');
         });
 
         test('repo yang sudah ada dikenali walau beda huruf besar atau garis miring', () => {
