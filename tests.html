@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex">
+    <title>Tes · Portofolio Fuad</title>
+    <style>
+        body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; }
+        .pass { color: #15803d; }
+        .fail { color: #dc2626; font-weight: 600; }
+        pre { margin: 0 0 0 20px; color: #71717a; }
+    </style>
+</head>
+<body>
+    <h1>Tes aturan daftar proyek</h1>
+    <p>Menguji assets/js/portfolio.js — tanpa Firebase dan tanpa internet.</p>
+    <p id="summary" data-status="running">Berjalan…</p>
+    <ul id="results"></ul>
+
+    <script type="module">
+        import {
+            categoryCounts, filterProjects, fromGithubRepo, knownRepos, normalizeCategory,
+            normalizeProject, parseCategories, repoKey, safeUrl, sortProjects, validateProject,
+        } from './assets/js/portfolio.js';
+
+        const results = [];
+
+        function test(name, fn) {
+            try {
+                fn();
+                results.push({ name, ok: true });
+            } catch (error) {
+                results.push({ name, ok: false, message: error.message });
+            }
+        }
+
+        function same(actual, expected, label = '') {
+            const a = JSON.stringify(actual);
+            const e = JSON.stringify(expected);
+
+            if (a !== e) {
+                throw new Error(`${label} diharapkan ${e}, didapat ${a}`);
+            }
+        }
+
+        const projects = [
+            normalizeProject({ name: 'Kasir Warung', categories: 'golang, sheet', description: 'API kasir dengan laporan ke Google Sheet', year: 2024 }),
+            normalizeProject({ name: 'Portofolio', categories: ['Next.JS', 'firestore'], description: 'Situs daftar proyek', year: 2026, status: 'berjalan' }),
+            normalizeProject({ name: 'absensi', categories: 'sheet', description: 'Absensi karyawan', year: 2024 }),
+            normalizeProject({ name: 'Catatan lama', categories: '' }),
+        ];
+
+        test('kategori disamakan ejaannya', () => {
+            same(normalizeCategory('  Next.JS '), 'next js');
+            same(normalizeCategory('Go'), 'golang');
+            same(normalizeCategory('Google  Sheets'), 'sheet');
+            same(parseCategories('sheet, Golang,, next js, SHEET'), ['sheet', 'golang', 'next js']);
+        });
+
+        test('satu proyek boleh punya beberapa kategori', () => {
+            same(projects[0].categories, ['golang', 'sheet']);
+            same(projects[1].categories, ['next js', 'firestore']);
+        });
+
+        test('hitungan kategori untuk sidebar: terbanyak dulu', () => {
+            same(categoryCounts(projects), [
+                { name: 'sheet', count: 2 },
+                { name: 'firestore', count: 1 },
+                { name: 'golang', count: 1 },
+                { name: 'next js', count: 1 },
+            ]);
+        });
+
+        test('saring per kategori', () => {
+            same(filterProjects(projects, { category: 'sheet' }).map((p) => p.name), ['Kasir Warung', 'absensi']);
+        });
+
+        test('pencarian: tiap kata harus cocok, di kolom mana pun', () => {
+            same(filterProjects(projects, { query: 'golang google' }).map((p) => p.name), ['Kasir Warung']);
+            same(filterProjects(projects, { query: 'SITUS' }).map((p) => p.name), ['Portofolio']);
+            same(filterProjects(projects, { query: '2024' }).length, 2);
+            same(filterProjects(projects, { query: 'berjalan' }).map((p) => p.name), ['Portofolio']);
+            same(filterProjects(projects, { query: 'tidak ada' }).length, 0);
+        });
+
+        test('pencarian dan kategori sekaligus', () => {
+            same(filterProjects(projects, { category: 'sheet', query: 'absensi' }).map((p) => p.name), ['absensi']);
+        });
+
+        test('urutan: tahun terbaru dulu, tanpa tahun paling bawah, lalu nama', () => {
+            same(sortProjects(projects).map((p) => p.name), ['Portofolio', 'absensi', 'Kasir Warung', 'Catatan lama']);
+        });
+
+        test('hanya tautan http(s) yang dipakai', () => {
+            same(safeUrl('github.com/muzadidil'), 'https://github.com/muzadidil');
+            same(safeUrl('javascript:alert(1)'), '');
+            same(safeUrl('  '), '');
+            same(normalizeProject({ name: 'x', demo: 'javascript:alert(1)' }).demo, '');
+        });
+
+        test('bentuk proyek dirapikan sebelum disimpan', () => {
+            const p = normalizeProject({ name: '  Kasir  ', year: '20xx', status: 'aneh' });
+
+            same(p.name, 'Kasir');
+            same(p.year, null);
+            same(p.status, 'selesai');
+            same(validateProject(normalizeProject({ name: '   ' })), 'Nama proyek wajib diisi.');
+            same(validateProject(p), null);
+        });
+
+        test('repo GitHub menjadi proyek', () => {
+            const p = fromGithubRepo({
+                name: 'TODO_muzadidil',
+                html_url: 'https://github.com/muzadidil/TODO_muzadidil',
+                description: 'TaskFlow',
+                language: 'JavaScript',
+                topics: ['firebase', 'Go'],
+                homepage: '',
+                has_pages: true,
+                created_at: '2025-03-04T10:00:00Z',
+            }, 'muzadidil');
+
+            same(p.categories, ['javascript', 'firebase', 'golang']);
+            same(p.demo, 'https://muzadidil.github.io/TODO_muzadidil/');
+            same(p.year, 2025);
+            same(p.description, 'TaskFlow');
+        });
+
+        test('repo yang sudah ada dikenali walau beda huruf besar atau garis miring', () => {
+            const known = knownRepos([{ github: 'https://github.com/Muzadidil/Kasir/' }]);
+
+            same(known.has(repoKey('https://github.com/muzadidil/kasir')), true);
+            same(known.has(repoKey('https://github.com/muzadidil/lain')), false);
+        });
+
+        const failed = results.filter((r) => !r.ok);
+        const list = document.getElementById('results');
+
+        for (const r of results) {
+            const li = document.createElement('li');
+            li.className = r.ok ? 'pass' : 'fail';
+            li.textContent = `${r.ok ? '✓' : '✗'} ${r.name}`;
+
+            if (!r.ok) {
+                const pre = document.createElement('pre');
+                pre.textContent = r.message;
+                li.append(pre);
+            }
+
+            list.append(li);
+        }
+
+        const summary = document.getElementById('summary');
+        summary.dataset.status = failed.length ? 'fail' : 'pass';
+        summary.className = failed.length ? 'fail' : 'pass';
+        summary.textContent = `${results.length - failed.length} dari ${results.length} tes lolos`;
+    </script>
+</body>
+</html>

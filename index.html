@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Portofolio Fuad</title>
+    <meta name="description" content="Daftar proyek yang pernah dikerjakan Fuad.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233b5bdb'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-size='16' font-weight='700' fill='white' text-anchor='middle'%3EF%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script type="module" src="assets/js/public.js"></script>
+</head>
+<body>
+    <div class="shell">
+        <!-- Kategori: panel tetap di kiri; di ponsel digeser masuk lewat ☰. -->
+        <aside class="sidebar" id="sidebar" aria-label="Kategori" tabindex="-1">
+            <div class="sidebar__brand">
+                <a class="brand" href="./">
+                    <span class="brand__mark" aria-hidden="true">F</span>
+                    <span class="brand__name" id="brand">Portofolio Fuad</span>
+                </a>
+                <button type="button" class="sidebar__close" id="sidebarClose" aria-label="Tutup kategori">×</button>
+            </div>
+
+            <h2 class="sidebar__title">Kategori</h2>
+            <nav class="categories" id="categories"></nav>
+
+            <a class="sidebar__github" id="githubLink" target="_blank" rel="noopener"></a>
+        </aside>
+
+        <div class="content">
+            <header class="topbar">
+                <button type="button" class="menu-button" id="menuButton" aria-controls="sidebar" aria-expanded="false" aria-label="Buka kategori">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
+
+                <span class="topbar__title" id="topbarTitle">Portofolio Fuad</span>
+
+                <!-- Hanya password: emailnya dipasangkan di assets/js/config.js. -->
+                <form class="login" id="login" hidden>
+                    <label class="sr-only" for="password">Password admin</label>
+                    <input type="password" id="password" placeholder="Password" autocomplete="current-password" required>
+                    <button type="submit" class="button button--primary">Login</button>
+                    <p class="login__error" id="loginError" role="alert"></p>
+                </form>
+
+                <div class="admin-links" id="adminLinks" hidden>
+                    <a class="button button--primary" href="admin.html">Halaman admin</a>
+                    <button type="button" class="button" id="logout">Keluar</button>
+                </div>
+            </header>
+
+            <div class="page-head">
+                <p class="page-head__eyebrow">Portofolio</p>
+                <h1 class="page-head__title" id="heroTitle">Portofolio Fuad</h1>
+                <p class="page-head__tagline" id="tagline"></p>
+
+                <label class="search search--page">
+                    <span class="sr-only">Cari proyek</span>
+                    <svg class="search__icon" viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m14 14 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                    <input type="search" id="search" placeholder="Cari proyek, kategori, atau tahun…" autocomplete="off">
+                </label>
+
+                <div class="page-head__stats">
+                    <span class="stat"><strong id="statProjects">–</strong> proyek</span>
+                    <span class="stat"><strong id="statCategories">–</strong> kategori</span>
+                </div>
+            </div>
+
+            <main class="main">
+                <p class="summary" id="summary">Memuat…</p>
+                <ul class="projects" id="list"></ul>
+            </main>
+
+            <footer class="footer" id="footer"></footer>
+        </div>
+    </div>
+
+    <div class="backdrop" id="backdrop" hidden></div>
+</body>
+</html>
