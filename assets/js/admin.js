@@ -214,7 +214,11 @@ async function addSelectedRepos() {
         $('github').close();
         toast(`${chosen.length} proyek ditambahkan. Lengkapi kategori dan deskripsinya lewat tombol Ubah.`);
     } catch (error) {
+        // Pesannya ditaruh di dua tempat: di atas daftar repo yang mungkin
+        // sudah tergulir jauh, dan sebagai toast yang pasti terlihat.
         $('githubStatus').textContent = errorMessage(error);
+        $('githubStatus').scrollIntoView({ block: 'nearest' });
+        toast(errorMessage(error), 'error');
         updateGithubButton();
     }
 }
